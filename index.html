@@ -179,7 +179,7 @@
   }
   .chip:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* Active chip colors — 統一紫色單一規則 */
+  /* Active chip colors */
   .chip.active { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
   .chip.active[data-val="全部"] { background: var(--surface2); color: var(--text); border-color: var(--border2); }
 
@@ -209,7 +209,6 @@
     gap: 16px;
     margin-bottom: 0.5rem;
   }
-
 
   .flow-chip:hover { border-color: var(--flow); color: var(--flow); }
   .flow-chip.active[data-val="全部"] { background: var(--surface2); color: var(--text); border-color: var(--border2); }
@@ -248,7 +247,6 @@
     transform: translateY(-2px);
     border-color: var(--border2);
   }
-  /* 程流卡片 hover */
   .card.flow-card:hover {
     box-shadow: var(--flow-shadow-hover);
     border-color: #f5c261;
@@ -356,12 +354,96 @@
   .copy-btn:active { transform: scale(0.97); }
   .copy-btn.copied { background: #10b981; box-shadow: 0 2px 8px rgba(16,185,129,0.25); }
 
-  /* 程流複製按鈕 橙色 */
   .copy-btn.flow-copy {
     background: var(--flow);
     box-shadow: 0 2px 8px rgba(245,158,11,0.28);
   }
   .copy-btn.flow-copy.copied { background: #10b981; }
+
+  /* Error and Instructions Style */
+  .error-guide-container {
+    background: var(--surface);
+    border: 1.5px solid #f5c261;
+    border-radius: 18px;
+    padding: 2rem 1.5rem;
+    max-width: 680px;
+    margin: 1.5rem auto;
+    box-shadow: 0 10px 30px rgba(245,158,11,0.08);
+    grid-column: 1 / -1;
+  }
+  .error-guide-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #b85c00;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  .error-guide-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+    text-align: left;
+  }
+  .guide-step {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .step-num {
+    background: #fef3cd;
+    color: #b85c00;
+    font-weight: 700;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+  .step-content {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--text2);
+  }
+  .step-content strong {
+    color: var(--text);
+  }
+  .guide-btn-group {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .guide-primary-btn {
+    background: #f59e0b;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 22px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13.5px;
+    transition: all 0.2s;
+    box-shadow: 0 3px 10px rgba(245,158,11,0.3);
+  }
+  .guide-primary-btn:hover { background: #d97706; transform: translateY(-1px); }
+  .guide-secondary-btn {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 11px 22px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13.5px;
+    transition: all 0.2s;
+  }
+  .guide-secondary-btn:hover { background: var(--border); }
 
   /* Empty / Loading */
   .empty, .loading {
@@ -492,13 +574,6 @@
     box-shadow: 0 4px 16px rgba(16,185,129,0.3);
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-  /* Divider in filter */
-  .filter-divider {
-    width: 1px; height: 20px;
-    background: var(--border);
-    flex-shrink: 0;
-  }
 
   /* Modal */
   .modal-overlay {
@@ -695,7 +770,14 @@
     <div class="workflow-intro">
       📂 點擊下方工作表按鈕，直接在 Google Sheet 中開啟對應的工作流程。
     </div>
-    <div id="workflowGrid"></div>
+    <div id="workflowGrid">
+      <div class="loading" style="text-align:center;padding:4rem 2rem;color:var(--text3);">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <p style="margin-top:1rem;font-size:13px;">正在讀取資料...</p>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -726,7 +808,7 @@
 <div class="toast" id="toast">✅ 已複製到剪貼簿！</div>
 
 <script>
-// 已更換為使用者提供的 SHEET_ID
+// 設定試算表
 const SHEET_ID = '1DUGDaYIe_Kbnu6Z9QHZDCv20ceMxZXRPB8L_tYy2zFg';
 const SHEET_NAME = encodeURIComponent('⓪AI提示詞');
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}`;
@@ -743,11 +825,74 @@ async function init() {
   await loadData();
 }
 
+// 產生更精緻的錯誤存取導引 UI
+function renderErrorGuide() {
+  const guideHtml = `
+    <div class="error-guide-container">
+      <div class="error-guide-title">
+        ⚠️ 偵測到讀取失敗！請確認共用權限
+      </div>
+      <div class="error-guide-steps">
+        <div class="guide-step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            點擊下方橘色按鈕<strong>「開啟 Google Sheet 試算表」</strong>。
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            在 Google 試算表網頁右上角，點擊 <strong>「共用 (Share)」</strong> 按鈕。
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            將一般存取權從「限制」改為 <strong>「知道連結的任何人 (Anyone with the link)」</strong>。
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            權限角色保持 <strong>「檢視者 (Viewer)」</strong> 即可，最後點擊「完成」。
+          </div>
+        </div>
+        <div class="guide-step">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            完成後返回本頁，點擊下方 <strong>「重新讀取資料」</strong>。
+          </div>
+        </div>
+      </div>
+      <div class="guide-btn-group">
+        <button class="guide-primary-btn" onclick="window.open('https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit', '_blank')">
+          🌐 1. 前往 Google Sheet 設定
+        </button>
+        <button class="guide-secondary-btn" onclick="window.location.reload()">
+          🔄 2. 重新讀取資料
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('cardsGrid').innerHTML = guideHtml;
+  document.getElementById('flowCardsGrid').innerHTML = `
+    <div class="empty">⚠️ 無法連線至 Google Sheet。請參閱上方「單項提示詞」分頁的權限設定導引。</div>
+  `;
+}
+
 async function loadData() {
   try {
     const res = await fetch(CSV_URL);
+    if (!res.ok) throw new Error('Network response was not ok');
     const text = await res.text();
     allData = parseCSV(text);
+    
+    // 防呆驗證：如果解析出 0 筆資料，代表拿到了 HTML 登入碼，主動丟出錯誤進 catch
+    if (!allData || allData.length === 0) {
+      throw new Error('Parsed data is empty');
+    }
+
     // 分流：有 order 的是程流，沒有的是單項
     flowData = allData.filter(d => d.order && d.order.toString().trim() !== '');
     singleData = allData.filter(d => !d.order || d.order.toString().trim() === '');
@@ -756,10 +901,8 @@ async function loadData() {
     filterCards();
     filterFlowCards();
   } catch(e) {
-    document.getElementById('cardsGrid').innerHTML = `
-      <div class="empty">⚠️<br><br>無法讀取資料，請確認 Google Sheet 已設為公開檢視</div>`;
-    document.getElementById('flowCardsGrid').innerHTML = `
-      <div class="empty">⚠️<br><br>無法讀取資料</div>`;
+    console.error('Data load error:', e);
+    renderErrorGuide();
   }
 }
 
@@ -874,7 +1017,6 @@ function setFilter(group, val) {
   filterCards();
 }
 
-// ─── 程流提示詞專用篩選 ───
 function setFlowFilter(group, val) {
   flowFilters[group] = val;
   const dataGroup = 'flow-' + group;
@@ -922,7 +1064,10 @@ function filterFlowCards() {
 
 function renderFlowGrouped(data) {
   const grid = document.getElementById('flowCardsGrid');
-  document.getElementById('flowStatsBar').innerHTML = `共 <span>${data.length}</span> 個提示詞`;
+  const statsBar = document.getElementById('flowStatsBar');
+  if (statsBar) {
+    statsBar.innerHTML = `共 <span>${data.length}</span> 個提示詞`;
+  }
   window._filteredFlowData = data;
 
   if (!data.length) {
@@ -1012,7 +1157,10 @@ function getModeTag(mode) {
 
 function renderCards(data, gridId, statsId, isFlow) {
   const grid = document.getElementById(gridId);
-  document.getElementById(statsId).innerHTML = `共 <span>${data.length}</span> 個提示詞`;
+  const statsBar = document.getElementById(statsId);
+  if (statsBar) {
+    statsBar.innerHTML = `共 <span>${data.length}</span> 個提示詞`;
+  }
   if (isFlow) {
     window._filteredFlowData = data;
   } else {
@@ -1064,15 +1212,22 @@ function renderCards(data, gridId, statsId, isFlow) {
   }).join('');
 }
 
-// ─── Bug fix: 複製完整 content ───
 function copyPrompt(btn, idx, isFlow) {
   const d = isFlow ? window._filteredFlowData[idx] : window._filteredData[idx];
-  navigator.clipboard.writeText(d.content).then(() => {
+  const tempTextArea = document.createElement("textarea");
+  tempTextArea.value = d.content;
+  document.body.appendChild(tempTextArea);
+  tempTextArea.select();
+  try {
+    document.execCommand('copy');
     btn.textContent = '✅ 已複製！';
     btn.classList.add('copied');
     showToast();
     setTimeout(() => { btn.textContent = '📋 複製 Prompt'; btn.classList.remove('copied'); }, 2000);
-  });
+  } catch (err) {
+    console.error('Copy failed', err);
+  }
+  document.body.removeChild(tempTextArea);
 }
 
 function showToast(msg) {
@@ -1103,6 +1258,7 @@ async function loadWorkflow() {
     const sheetName = encodeURIComponent('①工作流');
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
     const res = await fetch(url);
+    if (!res.ok) throw new Error('Workflow load fail');
     const text = await res.text();
     const records = splitCSVRecords(text);
     const items = [];
@@ -1115,9 +1271,18 @@ async function loadWorkflow() {
       if (!name) continue;
       items.push({ category, name, sheetUrl });
     }
+    
+    // 如果解析出 0 筆，主動視為未開放共用並拋錯
+    if (items.length === 0) {
+      throw new Error('Parsed items is 0');
+    }
+
     renderWorkflow(items);
   } catch(e) {
-    grid.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:1rem;">⚠️ 無法載入工作流資料</div>';
+    grid.innerHTML = `
+      <div style="color:var(--text3);font-size:13px;padding:1.5rem; text-align: center;">
+        ⚠️ 無法載入工作流資料。請在「單項提示詞」分頁，確認 Google Sheet 共用權限。
+      </div>`;
   }
 }
 
@@ -1220,45 +1385,67 @@ function closeModalOnOverlay(e) {
   if (e.target === document.getElementById('modalOverlay')) closeModal();
 }
 
-// ─── Bug fix: editPrompt 複製完整 content ───
 function editPrompt(idx, isFlow) {
   const d = isFlow ? window._filteredFlowData[idx] : window._filteredData[idx];
   const copyText = d.num || d.title;
-  navigator.clipboard.writeText(copyText).then(() => {
+  
+  const tempTextArea = document.createElement("textarea");
+  tempTextArea.value = copyText;
+  document.body.appendChild(tempTextArea);
+  tempTextArea.select();
+  try {
+    document.execCommand('copy');
     showToast(`📋 已複製「${copyText}」`);
     setTimeout(() => {
       window.open(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`, '_blank');
     }, 600);
-  });
+  } catch (err) {
+    console.error('Copy failed', err);
+  }
+  document.body.removeChild(tempTextArea);
 }
 
-// ─── Modal 編輯按鈕 ───
 function editModalPrompt() {
   if (!_modalData) return;
   const copyText = _modalData.num || _modalData.title;
-  navigator.clipboard.writeText(copyText).then(() => {
+  
+  const tempTextArea = document.createElement("textarea");
+  tempTextArea.value = copyText;
+  document.body.appendChild(tempTextArea);
+  tempTextArea.select();
+  try {
+    document.execCommand('copy');
     showToast(`📋 已複製「${copyText}」`);
     setTimeout(() => {
       window.open(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit`, '_blank');
     }, 600);
-  });
+  } catch (err) {
+    console.error('Copy failed', err);
+  }
+  document.body.removeChild(tempTextArea);
 }
 
-// ─── Bug fix: copyModalPrompt 複製完整 content ───
 function copyModalPrompt() {
   if (!_modalData) return;
-  navigator.clipboard.writeText(_modalData.content).then(() => {
+  const tempTextArea = document.createElement("textarea");
+  tempTextArea.value = _modalData.content;
+  document.body.appendChild(tempTextArea);
+  tempTextArea.select();
+  try {
+    document.execCommand('copy');
     const btn = document.getElementById('modalCopyBtn');
     btn.textContent = '✅ 已複製！';
     btn.classList.add('copied');
     showToast();
     setTimeout(() => { btn.textContent = '📋 複製 Prompt'; btn.classList.remove('copied'); }, 2000);
-  });
+  } catch (err) {
+    console.error('Copy failed', err);
+  }
+  document.body.removeChild(tempTextArea);
 }
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') { closeModal(); return; }
-  // 快速切換頁籤（輸入框或 Modal 開啟時不觸發）
   const inInput = ['INPUT','TEXTAREA'].includes(document.activeElement.tagName);
   const modalOpen = document.getElementById('modalOverlay').classList.contains('open');
   if (!inInput && !modalOpen) {
