@@ -726,7 +726,8 @@
 <div class="toast" id="toast">✅ 已複製到剪貼簿！</div>
 
 <script>
-const SHEET_ID = '10NlenChALIPNVolMhdX7u_Rgg-4JXbnJesfglu2I5yY';
+// 已更換為使用者提供的 SHEET_ID
+const SHEET_ID = '1DUGDaYIe_Kbnu6Z9QHZDCv20ceMxZXRPB8L_tYy2zFg';
 const SHEET_NAME = encodeURIComponent('⓪AI提示詞');
 const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}`;
 
@@ -873,6 +874,7 @@ function setFilter(group, val) {
   filterCards();
 }
 
+// ─── 程流提示詞專用篩選 ───
 function setFlowFilter(group, val) {
   flowFilters[group] = val;
   const dataGroup = 'flow-' + group;
